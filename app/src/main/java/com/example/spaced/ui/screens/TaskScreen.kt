@@ -38,9 +38,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.spaced.ui.components.SubjectTagBottomSheet
-import com.example.spaced.ui.screens.components.DifficultySelectorSection
-import com.example.spaced.ui.screens.components.SubjectTagAndChapterRow
-import com.example.spaced.ui.screens.components.TrackTopBar
+import com.example.spaced.ui.components.DifficultySelectorSection
+import com.example.spaced.ui.components.StudiedOnSection
+import com.example.spaced.ui.components.SubjectTagAndChapterRow
+import com.example.spaced.ui.components.TrackTopBar
+import com.example.spaced.ui.components.getTodayFormatted
 import com.example.spaced.ui.theme.HighlightedLabelTextStyle
 import com.example.spaced.ui.theme.TextFieldTitleTextStyle
 import com.example.spaced.ui.theme.TrackTextStyle
@@ -62,7 +64,7 @@ fun TrackScreen(
     var showSubjectTagSheet by remember { mutableStateOf(false) }
 
     var selectedChapter by remember { mutableStateOf("None") }
-    var selectedDateText by remember { mutableStateOf("17 September 2026") }
+    var selectedDateText by remember { mutableStateOf(getTodayFormatted()) }
     var selectedDifficulty by remember { mutableStateOf(TaskDifficulty.EASY) }
 
     val primaryBg = MaterialTheme.colorScheme.primary
@@ -181,7 +183,7 @@ fun TrackScreen(
             // GROUP 3: Reference
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Reference",
+                    text = "Reference (Optional)",
                     style = TextFieldTitleTextStyle,
                     color = onSurface
                 )
@@ -222,48 +224,16 @@ fun TrackScreen(
             )
 
             // GROUP 5: Studied On
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Studied On",
-                    style = TextFieldTitleTextStyle,
-                    color = onSurface
-                )
-
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = selectedDateText,
-                            fontSize = 14.sp,
-                            style = HighlightedLabelTextStyle,
-                            color = onPrimaryColor
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarToday,
-                            contentDescription = "Select Date",
-                            tint = onPrimaryColor
-                        )
-                    },
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowRight,
-                            contentDescription = "Open Date Picker",
-                            tint = onPrimaryColor
-                        )
-                    },
-                    onClick = { /* Handle Date Picker trigger */ },
-                    colors = MenuDefaults.itemColors(textColor = onPrimaryColor),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .clip(itemShape)
-                        .background(fieldContainerColor)
-                )
-            }
+            StudiedOnSection(
+                selectedDateText = selectedDateText,
+                onDateSelected = { newDate ->
+                    selectedDateText = newDate
+                },
+                onSurface = onSurface,
+                onPrimaryColor = onPrimaryColor,
+                fieldContainerColor = MaterialTheme.colorScheme.surfaceBright,
+                itemShape = itemShape
+            )
 
             // GROUP 6: Difficulty Selector
             DifficultySelectorSection(

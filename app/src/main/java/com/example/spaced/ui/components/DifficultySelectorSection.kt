@@ -1,4 +1,4 @@
-package com.example.spaced.ui.screens.components
+package com.example.spaced.ui.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState

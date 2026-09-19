@@ -24,7 +24,6 @@ android {
     buildTypes {
         release {
 //            isShrinkResources = true
-            isMinifyEnabled = false
 
             optimization {
                 enable = true

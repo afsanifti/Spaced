@@ -1,4 +1,4 @@
-package com.example.spaced.ui.screens.components
+package com.example.spaced.ui.components
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
