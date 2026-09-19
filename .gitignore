@@ -1,0 +1,31 @@
+# Built application files & outputs
+*.apk
+*.aar
+*.aab
+build/
+*/build/
+
+# Gradle & Kotlin build caches
+.gradle/
+.kotlin/
+
+# Local configuration files
+local.properties
+
+# Android Studio & IntelliJ files
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+*.iml
+
+# App signing keystores
+*.jks
+*.keystore
+
+# Operating system files
+.DS_Store
+Thumbs.db
