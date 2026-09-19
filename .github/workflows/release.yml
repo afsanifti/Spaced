@@ -30,7 +30,7 @@ jobs:
       # --- ALPHA BRANCH BUILD ---
       - name: Build Alpha Debug APK
         if: github.ref == 'refs/heads/alpha'
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleRelease
 
       - name: Publish Alpha Pre-Release
         if: github.ref == 'refs/heads/alpha'
@@ -40,7 +40,7 @@ jobs:
           name: "Alpha Build #${{ github.run_number }}"
           body: "Automated alpha testing build generated from `alpha` branch."
           prerelease: true
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: app/build/outputs/apk/release/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
