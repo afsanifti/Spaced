@@ -3,6 +3,7 @@ name: Build & Release Android APK
 on:
   push:
     branches:
+      - alpha
       - beta
       - main
 
@@ -26,7 +27,24 @@ jobs:
       - name: Grant Execute Permission for Gradlew
         run: chmod +x gradlew
 
-      # --- BETA BRANCH BUILD & PRE-RELEASE ---
+      # --- ALPHA BRANCH BUILD ---
+      - name: Build Alpha Debug APK
+        if: github.ref == 'refs/heads/alpha'
+        run: ./gradlew assembleDebug
+
+      - name: Publish Alpha Pre-Release
+        if: github.ref == 'refs/heads/alpha'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: alpha-build-${{ github.run_number }}
+          name: "Alpha Build #${{ github.run_number }}"
+          body: "Automated alpha testing build generated from `alpha` branch."
+          prerelease: true
+          files: app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- BETA BRANCH BUILD ---
       - name: Build Beta Debug APK
         if: github.ref == 'refs/heads/beta'
         run: ./gradlew assembleDebug
@@ -37,13 +55,13 @@ jobs:
         with:
           tag_name: beta-build-${{ github.run_number }}
           name: "Beta Build #${{ github.run_number }}"
-          body: "Automated pre-release generated from `beta` branch."
+          body: "Automated beta testing build generated from `beta` branch."
           prerelease: true
           files: app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- MAIN BRANCH BUILD & STABLE RELEASE ---
+      # --- MAIN BRANCH BUILD ---
       - name: Build Stable Release APK
         if: github.ref == 'refs/heads/main'
         run: ./gradlew assembleRelease
@@ -56,6 +74,6 @@ jobs:
           name: "Stable Release v1.0.${{ github.run_number }}"
           body: "Official release generated from `main` branch."
           prerelease: false
-          files: app/build/outputs/apk/release/app-release-unsigned.apk
+          files: app/build/outputs/apk/release/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
