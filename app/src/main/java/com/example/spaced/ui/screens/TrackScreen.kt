@@ -1,6 +1,5 @@
 package com.example.spaced.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -12,17 +11,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -33,17 +28,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.spaced.ui.components.SubjectTagBottomSheet
-import com.example.spaced.ui.components.DifficultySelectorSection
-import com.example.spaced.ui.components.StudiedOnSection
-import com.example.spaced.ui.components.SubjectTagAndChapterRow
+import com.example.spaced.ui.components.forms.DifficultySelectorSection
+import com.example.spaced.ui.components.forms.StudiedOnSection
+import com.example.spaced.ui.components.forms.SubjectTagAndChapterRow
+import com.example.spaced.ui.components.sheets.SubjectTagBottomSheet
 import com.example.spaced.ui.components.TrackTopBar
-import com.example.spaced.ui.components.getTodayFormatted
-import com.example.spaced.ui.theme.HighlightedLabelTextStyle
+import com.example.spaced.ui.components.forms.getTodayFormatted
 import com.example.spaced.ui.theme.TextFieldTitleTextStyle
 import com.example.spaced.ui.theme.TrackTextStyle
 import com.example.spaced.ui.utils.TaskDifficulty
@@ -67,17 +59,20 @@ fun TrackScreen(
     var selectedDateText by remember { mutableStateOf(getTodayFormatted()) }
     var selectedDifficulty by remember { mutableStateOf(TaskDifficulty.EASY) }
 
-    val primaryBg = MaterialTheme.colorScheme.primary
-    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
+    // Validation check: Requires non-blank title AND selected tag
+    val isFormValid = taskTitle.isNotBlank() && !selectedTag.isNull_Blank()
+
+    val primaryBg = MaterialTheme.colorScheme.primaryContainer
+    val onPrimaryColor = MaterialTheme.colorScheme.onPrimaryContainer
     val onSurface = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.7f)
-    val fieldContainerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
+    val fieldContainerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.3f)
 
     val fieldShape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
     val itemShape = RoundedCornerShape(16.dp)
 
     val customFieldColors = TextFieldDefaults.colors(
         focusedContainerColor = fieldContainerColor,
-        unfocusedContainerColor = fieldContainerColor,
+        unfocusedContainerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.3f),
         focusedIndicatorColor = onPrimaryColor,
         unfocusedIndicatorColor = onPrimaryColor,
         disabledIndicatorColor = Color.Transparent,
@@ -122,7 +117,7 @@ fun TrackScreen(
             // GROUP 1: Task Title
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Task Title",
+                    text = "Task Title*",
                     style = TextFieldTitleTextStyle,
                     color = onSurface
                 )
@@ -248,21 +243,23 @@ fun TrackScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // GROUP 7: Start Tracking Button
+            // GROUP 7: Start Tracking Button with Validation
             Button(
                 onClick = onStartTrackingClick,
+                enabled = isFormValid,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = onPrimaryColor,
-                    contentColor = primaryBg
+                    contentColor = primaryBg,
+                    disabledContainerColor = onPrimaryColor.copy(alpha = 0.38f),
+                    disabledContentColor = primaryBg.copy(alpha = 0.38f)
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
             ) {
                 Text(
-                    "Start Tracking",
-                    style = TrackTextStyle,
-                    color = primaryBg
+                    text = "Start Tracking",
+                    style = TrackTextStyle
                 )
             }
         }
@@ -286,3 +283,6 @@ fun TrackScreen(
         )
     }
 }
+
+// Helper extension to handle null or blank strings cleanly
+private fun String?.isNull_Blank(): Boolean = this == null || this.isBlank()

@@ -1,4 +1,4 @@
-package com.example.spaced.ui.components
+package com.example.spaced.ui.components.calender
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.example.spaced.ui.theme.CalendarShortTextStyle
 import com.example.spaced.ui.theme.MonthHeaderTextStyle
 import java.time.LocalDate
+import java.time.format.TextStyle
 import java.util.Locale
 
 @Composable
@@ -107,18 +108,18 @@ private fun CalendarDayItem(
     onClick: () -> Unit
 ) {
     val dayLetter = date.dayOfWeek.getDisplayName(
-        java.time.format.TextStyle.NARROW,
+        TextStyle.NARROW,
         Locale.getDefault()
     )
 
     val backgroundColor = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer
+        MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.surfaceContainerLow
     }
 
     val contentColor = if (isSelected) {
-        MaterialTheme.colorScheme.onPrimaryContainer
+        MaterialTheme.colorScheme.onPrimary
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }

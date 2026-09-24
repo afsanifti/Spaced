@@ -1,4 +1,4 @@
-package com.example.spaced.ui.components
+package com.example.spaced.ui.components.task
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,11 +36,12 @@ fun TaskTabRow(
     selectedTab: TaskTab,
     onTabSelected: (TaskTab) -> Unit,
     modifier: Modifier = Modifier,
-    taskCounts: Map<TaskTab, Int> = emptyMap()
+    taskCounts: Map<TaskTab, Int> = emptyMap(),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 20.dp) // Added to allow edge-to-edge scrolling aligned with cards
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 16.dp),
+        contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(TaskTab.entries.toTypedArray()) { tab ->
@@ -65,7 +66,7 @@ private fun TaskTabPill(
     onClick: () -> Unit
 ) {
     val containerColor = if (isSelected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f)
-    val labelTextColor = Color(0xFF1B0072)
+    val labelTextColor = if (isSelected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSecondary
     val badgeBgColor = Color(0x8043359F)
     val badgeTextColor = Color(0xFFD1CAFF)
 
@@ -85,7 +86,7 @@ private fun TaskTabPill(
                 softWrap = false,
                 modifier = Modifier
                     .align(Alignment.CenterStart)
-                    .padding(start = 8.dp, end = 36.dp)
+                    .padding(start = 12.dp, end = 36.dp)
             )
 
             Box(
@@ -112,7 +113,7 @@ private fun TaskTabPill(
                 .clip(CircleShape)
                 .background(containerColor)
                 .clickable { onClick() }
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = 12.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(

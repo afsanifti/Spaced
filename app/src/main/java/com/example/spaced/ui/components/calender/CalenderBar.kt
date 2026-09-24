@@ -1,4 +1,4 @@
-package com.example.spaced.ui.components
+package com.example.spaced.ui.components.calender
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background

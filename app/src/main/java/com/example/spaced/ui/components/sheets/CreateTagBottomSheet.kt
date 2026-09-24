@@ -1,4 +1,4 @@
-package com.example.spaced.ui.components
+package com.example.spaced.ui.components.sheets
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

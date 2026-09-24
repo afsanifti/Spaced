@@ -1,4 +1,4 @@
-package com.example.spaced.ui.components
+package com.example.spaced.ui.components.calender
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -169,7 +169,7 @@ private fun MonthCalendarView(
                             .padding(1.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(
-                                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                if (isSelected) MaterialTheme.colorScheme.primary
                                 else Color.Transparent
                             )
                             .clickable { onDateSelected(date) },

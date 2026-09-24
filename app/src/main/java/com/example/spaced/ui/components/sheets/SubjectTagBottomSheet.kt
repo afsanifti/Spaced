@@ -1,4 +1,4 @@
-package com.example.spaced.ui.components
+package com.example.spaced.ui.components.sheets
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -163,7 +163,7 @@ fun SubjectTagBottomSheet(
                     onClick = { showCreateTagSheet = true },
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.onBackground,
+                        containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f),
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     modifier = Modifier

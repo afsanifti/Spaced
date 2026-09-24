@@ -173,6 +173,41 @@ val HighlightedLabelTextStyle = TextStyle(
     fontSize = 14.sp
 )
 
+val TagAndChapFontFamily = FontFamily(
+    Font(
+        resId = R.font.google_sans_flex,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(450),
+            FontVariation.width(104f),
+            FontVariation.Setting("opsz", 12f)
+        )
+    )
+)
+
+val TagAndChapTextStyle = TextStyle(
+    fontFamily = TagAndChapFontFamily,
+    fontSize = 12.sp
+)
+
+val TaskTitleFontFamily = FontFamily(
+    Font(
+        resId = R.font.google_sans_flex,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(545),
+            FontVariation.width(105f),
+            FontVariation.Setting("opsz", 28f),
+            FontVariation.Setting("GRAD", 70f),
+            FontVariation.Setting("ROND", 70f)
+        )
+    )
+)
+
+val TaskTitleTextStyle = TextStyle(
+    fontFamily = TaskTitleFontFamily,
+    fontSize = 16.sp
+)
+
+
 // App Theme Typography Default
 val SpacedTypography = Typography(
     bodyLarge = TextStyle(

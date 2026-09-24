@@ -1,4 +1,4 @@
-package com.example.spaced.ui.components
+package com.example.spaced.ui.components.forms
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -95,7 +95,7 @@ fun StudiedOnSection(
                 .fillMaxWidth()
                 .height(48.dp)
                 .clip(itemShape)
-                .background(MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f))
+                .background(MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.3f))
         )
     }
 
