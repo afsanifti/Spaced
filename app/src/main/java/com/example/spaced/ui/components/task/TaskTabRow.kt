@@ -67,8 +67,8 @@ private fun TaskTabPill(
 ) {
     val containerColor = if (isSelected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f)
     val labelTextColor = if (isSelected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSecondary
-    val badgeBgColor = Color(0x8043359F)
-    val badgeTextColor = Color(0xFFD1CAFF)
+    val badgeBgColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+    val badgeTextColor = MaterialTheme.colorScheme.inverseSurface
 
     if (count > 0) {
         Box(
