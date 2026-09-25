@@ -57,7 +57,7 @@ fun SubjectTagBottomSheet(
     var showCreateTagSheet by remember { mutableStateOf(false) }
 
     // Color definitions
-    val sheetBg = MaterialTheme.colorScheme.primary
+    val sheetBg = MaterialTheme.colorScheme.primaryContainer
     val darkBlue = Color(0xFF00159E)
     val unselectedTagBg = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
     val textMuted = Color(0xFF2C3170)

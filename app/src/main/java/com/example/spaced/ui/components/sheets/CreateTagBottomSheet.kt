@@ -12,6 +12,7 @@ import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -30,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.spaced.ui.theme.TrackTextStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,8 +63,8 @@ fun CreateTagBottomSheet(
             Text(
                 text = "Create tag",
                 fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = darkBlue
+                style = TrackTextStyle,
+                color = MaterialTheme.colorScheme.onPrimary
             )
 
             Row(
