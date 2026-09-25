@@ -63,7 +63,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation("androidx.compose.material3:material3:1.5.0-alpha28") // Or latest version
+    implementation("androidx.navigation:navigation-compose:2.10.2") // or newer
+    implementation("androidx.compose.material3:material3:1.5.0-alpha29") // Or latest version
     implementation("androidx.compose.ui:ui:1.12.1")
     implementation("com.google.android.material:material:1.14.0")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")

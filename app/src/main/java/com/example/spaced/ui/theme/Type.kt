@@ -1,5 +1,6 @@
 package com.example.spaced.ui.theme
 
+import android.graphics.pdf.models.ListItem
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -204,6 +205,40 @@ val TaskTitleFontFamily = FontFamily(
 
 val TaskTitleTextStyle = TextStyle(
     fontFamily = TaskTitleFontFamily,
+    fontSize = 16.sp
+)
+
+val TimerFontFamily = FontFamily(
+    Font(
+        resId = R.font.google_sans_flex,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(700),
+            FontVariation.width(110f),
+            FontVariation.Setting("opsz", 20f),
+            FontVariation.Setting("ROND", 100f)
+        )
+    )
+)
+
+val TimerTextStyle = TextStyle(
+    fontFamily = TimerFontFamily,
+    fontSize = 24.sp
+)
+
+val ListItemFontFamily = FontFamily(
+    Font(
+        resId = R.font.google_sans_flex,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(500),
+            FontVariation.width(105f),
+            FontVariation.Setting("GRAD", 50f),
+            FontVariation.Setting("ROND", 100f)
+        )
+    )
+)
+
+val ListItemTextStyle = TextStyle(
+    fontFamily = ListItemFontFamily,
     fontSize = 16.sp
 )
 

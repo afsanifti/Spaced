@@ -1,17 +1,5 @@
 package com.example.spaced.ui.screens
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -38,13 +26,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.spaced.data.model.Task
 import com.example.spaced.ui.components.TopDateHeader
-import com.example.spaced.ui.components.task.TaskCardCompressed
-import com.example.spaced.ui.components.task.TaskCardExpanded
+import com.example.spaced.ui.components.task.TaskCardItem
 import com.example.spaced.ui.components.task.TaskTab
 import com.example.spaced.ui.components.task.TaskTabRow
 import java.time.LocalDate
@@ -130,71 +115,20 @@ fun HomeScreen(
                 items = tasks,
                 key = { task -> task.id }
             ) { task ->
-                val isExpanded = expandedTaskId == task.id
-
-                AnimatedContent(
-                    targetState = isExpanded,
-                    transitionSpec = {
-                        val spatialSpring = spring<IntSize>(
-                            dampingRatio = Spring.DampingRatioLowBouncy,
-                            stiffness = Spring.StiffnessLow
-                        )
-
-                        val enterTransition = fadeIn(
-                            animationSpec = tween(durationMillis = 200, easing = LinearOutSlowInEasing)
-                        ) + scaleIn(
-                            initialScale = 0.96f,
-                            animationSpec = tween(durationMillis = 200, easing = LinearOutSlowInEasing)
-                        )
-
-                        val exitTransition = fadeOut(
-                            animationSpec = tween(durationMillis = 180, easing = FastOutLinearInEasing)
-                        ) + scaleOut(
-                            targetScale = 0.96f,
-                            animationSpec = tween(durationMillis = 180, easing = FastOutLinearInEasing)
-                        )
-
-                        (enterTransition togetherWith exitTransition).using(
-                            SizeTransform(
-                                clip = true,
-                                sizeAnimationSpec = { _, _ -> spatialSpring }
-                            )
-                        )
+                TaskCardItem(
+                    task = task,
+                    isExpanded = expandedTaskId == task.id,
+                    onExpandToggle = {
+                        expandedTaskId = if (expandedTaskId == task.id) null else task.id
                     },
-                    label = "TaskCardMaterialExpressiveTransition",
+                    onStartReviewClick = onStartReviewClick,
+                    onEditTaskClick = onEditTaskClick,
+                    onDeleteTaskClick = onDeleteTaskClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                         .animateItem()
-                ) { targetExpanded ->
-                    if (targetExpanded) {
-                        TaskCardExpanded(
-                            tag = task.tag,
-                            chapter = task.chapter,
-                            title = task.title,
-                            currentCycle = task.currentCycle,
-                            totalCycles = task.totalCycles,
-                            description = task.description,
-                            modifier = Modifier.fillMaxWidth(),
-                            onCollapseClick = { expandedTaskId = null },
-                            onStartReviewClick = { onStartReviewClick(task) },
-                            onEditClick = { onEditTaskClick(task) },
-                            onDeleteClick = { onDeleteTaskClick(task) },
-                            onClick = { expandedTaskId = null }
-                        )
-                    } else {
-                        TaskCardCompressed(
-                            tag = task.tag,
-                            chapter = task.chapter,
-                            title = task.title,
-                            currentCycle = task.currentCycle,
-                            totalCycles = task.totalCycles,
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = { expandedTaskId = task.id },
-                            onExpandClick = { expandedTaskId = task.id }
-                        )
-                    }
-                }
+                )
             }
         }
     }
