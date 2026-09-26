@@ -1,5 +1,7 @@
 package com.example.spaced.ui.components.session
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -17,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
@@ -36,23 +38,56 @@ import com.example.spaced.ui.theme.TimerTextStyle
 @Composable
 fun TaskSessionCard(
     task: Task,
+    formattedTime: String,
+    progress: Float,
+    currentCycle: Int,
+    totalCycles: Int,
+    isBreakMode: Boolean,
+    modeLabel: String,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
     val strokePx = with(density) { 10.dp.toPx() }
 
+    // Dynamic animated colors for Break vs Focus mode
+    val progressColor by animateColorAsState(
+        targetValue = if (isBreakMode) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+        animationSpec = tween(1000),
+        label = "ProgressColor"
+    )
+    val progressTrackColor by animateColorAsState(
+        targetValue = if (isBreakMode) MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.secondaryContainer,
+        animationSpec = tween(1000),
+        label = "ProgressTrackColor"
+    )
+    val badgeBgColor by animateColorAsState(
+        targetValue = if (isBreakMode) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
+        animationSpec = tween(1000),
+        label = "BadgeBgColor"
+    )
+    val badgeTextColor by animateColorAsState(
+        targetValue = if (isBreakMode) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary,
+        animationSpec = tween(1000),
+        label = "BadgeTextColor"
+    )
+    val noteTextColor by animateColorAsState(
+        targetValue = if (isBreakMode) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
+        animationSpec = tween(1000),
+        label = "NoteTextColor"
+    )
+
     AmbientMeshCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(369.dp)
+        isBreakMode = isBreakMode,
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(vertical = 24.dp, horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Top Details Header
+            // Header Details
             Column(
-                modifier = Modifier.padding(top = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
@@ -70,23 +105,22 @@ fun TaskSessionCard(
                 Text(
                     text = "My notes, Book page 112",
                     style = TagAndChapTextStyle,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = noteTextColor
                 )
             }
 
-            // 32dp Gap from 'My notes, Book page' section
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.weight(1f))
 
-            // Material 3 Expressive Wavy Circular Progress Indicator
+            // Dynamic Progress & Timer Text
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(154.dp)
             ) {
                 CircularWavyProgressIndicator(
-                    progress = { 0.25f },
+                    progress = { progress },
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.secondaryContainer,
+                    color = progressColor,
+                    trackColor = progressTrackColor,
                     stroke = Stroke(width = strokePx, cap = StrokeCap.Round),
                     trackStroke = Stroke(width = strokePx, cap = StrokeCap.Round),
                     wavelength = 36.dp,
@@ -94,52 +128,49 @@ fun TaskSessionCard(
                 )
 
                 Text(
-                    text = "24 : 30",
+                    text = formattedTime,
                     style = TimerTextStyle,
-                    color = MaterialTheme.colorScheme.primary
+                    color = progressColor
                 )
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Cycle and Focus container
+            // Dynamic Badges
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .padding(bottom = 32.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = badgeBgColor
                 ) {
                     Text(
-                        text = "Cycle 3 of 6",
+                        text = "Cycle $currentCycle of $totalCycles",
                         style = TextStyle(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = NormalFontFamily,
                         ),
-                        color = MaterialTheme.colorScheme.onSecondary,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        color = badgeTextColor,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
 
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = badgeBgColor
                 ) {
                     Text(
-                        text = "FOCUS",
+                        text = modeLabel,
                         style = TextStyle(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = NormalFontFamily,
                         ),
-                        color = MaterialTheme.colorScheme.onSecondary,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        color = badgeTextColor,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
             }

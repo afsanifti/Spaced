@@ -11,27 +11,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.spaced.data.model.Task
 import com.example.spaced.ui.components.navigation.ReviewTopBar
 import com.example.spaced.ui.components.session.TaskSessionBottomBar
 import com.example.spaced.ui.components.session.TaskSessionCard
 import com.example.spaced.ui.components.session.TaskSessionHistoryList
+import com.example.spaced.ui.viewmodels.TaskSessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskSessionScreen(
     task: Task,
     onCloseClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: TaskSessionViewModel = viewModel()
 ) {
-    var isPlaying by rememberSaveable { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val sectionSpacing = 16.dp
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -44,10 +45,12 @@ fun TaskSessionScreen(
         },
         bottomBar = {
             TaskSessionBottomBar(
-                isPlaying = isPlaying,
-                onPlayPauseClick = { isPlaying = !isPlaying },
-                onResetClick = { isPlaying = false },
-                onStopClick = { isPlaying = false },
+                isPlaying = uiState.isPlaying,
+                isBreakMode = uiState.isBreak,
+                onPlayPauseClick = { viewModel.togglePlayPause() },
+                onResetClick = { viewModel.resetTimer() },
+                onSkipClick = { viewModel.skipBreak() }, // 👈 Handled break skip action
+                onStopClick = { viewModel.stopSession() },
                 modifier = Modifier.navigationBarsPadding()
             )
         }
@@ -55,22 +58,26 @@ fun TaskSessionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    top = (innerPadding.calculateTopPadding() - 12.dp).coerceAtLeast(0.dp), // 👈 Pulls Card closer to App Bar
-                    bottom = innerPadding.calculateBottomPadding(),
-                    start = 20.dp,
-                    end = 20.dp
-                ),
+                .padding(innerPadding)
+                .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(sectionSpacing)
         ) {
             TaskSessionCard(
                 task = task,
+                formattedTime = uiState.formattedTime,
+                progress = uiState.progress,
+                currentCycle = uiState.currentCycle,
+                totalCycles = uiState.totalCycles,
+                isBreakMode = uiState.isBreak,
+                modeLabel = uiState.modeLabel,
                 modifier = Modifier.fillMaxWidth()
             )
 
             TaskSessionHistoryList(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
             )
         }
     }

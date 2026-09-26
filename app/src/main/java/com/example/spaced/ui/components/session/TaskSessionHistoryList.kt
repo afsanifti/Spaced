@@ -3,7 +3,6 @@ package com.example.spaced.ui.components.session
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -40,14 +39,8 @@ fun TaskSessionHistoryList(
     modifier: Modifier = Modifier,
     logs: List<SessionLogItem> = defaultSessionLogs
 ) {
-    // 4 items * 54dp + 3 gaps * 2dp = 222dp total container height
-    val exactFourItemsHeight = 222.dp
-
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(exactFourItemsHeight)
-            .clip(RoundedCornerShape(24.dp))
+        modifier = modifier.clip(RoundedCornerShape(24.dp))
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -55,7 +48,7 @@ fun TaskSessionHistoryList(
         ) {
             itemsIndexed(logs, key = { _, item -> item.id }) { index, item ->
                 SegmentedListItem(
-                    modifier = Modifier.height(54.dp),
+                    modifier = Modifier.height(58.dp), // Original uncompressed row height
                     shapes = ListItemDefaults.segmentedShapes(
                         index = index,
                         count = logs.size

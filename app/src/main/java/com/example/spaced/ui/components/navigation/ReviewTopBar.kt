@@ -24,7 +24,7 @@ fun ReviewTopBar(
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
-        modifier = modifier.padding(top = 20.dp),
+        modifier = modifier.padding(top = 8.dp),
         title = {
             Text(
                 text = "Review",

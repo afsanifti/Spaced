@@ -3,6 +3,7 @@ package com.example.spaced.ui.components.session
 import android.graphics.RuntimeShader
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -81,15 +82,21 @@ private const val MESH_GRADIENT_SHADER = """
 
 @Composable
 fun AmbientMeshCard(
+    isBreakMode: Boolean = false,
     modifier: Modifier = Modifier,
     animationDurationMillis: Int = 8000,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val surfaceColor = MaterialTheme.colorScheme.surface
-    val color1 = MaterialTheme.colorScheme.secondary
-    val color2 = MaterialTheme.colorScheme.secondaryContainer
-    val color3 = MaterialTheme.colorScheme.secondaryContainer
-    val color4 = MaterialTheme.colorScheme.secondary
+
+    // Animated colors for smooth transition between Focus and Break modes
+    val targetPrimary = if (isBreakMode) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary
+    val targetContainer = if (isBreakMode) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.secondaryContainer
+
+    val color1 by animateColorAsState(targetValue = targetPrimary, animationSpec = tween(1000), label = "c1")
+    val color2 by animateColorAsState(targetValue = targetContainer, animationSpec = tween(1000), label = "c2")
+    val color3 by animateColorAsState(targetValue = targetContainer, animationSpec = tween(1000), label = "c3")
+    val color4 by animateColorAsState(targetValue = targetPrimary, animationSpec = tween(1000), label = "c4")
 
     val infiniteTransition = rememberInfiniteTransition(label = "MeshAmbientAnimation")
     val shaderTime by infiniteTransition.animateFloat(
@@ -97,7 +104,7 @@ fun AmbientMeshCard(
         targetValue = 62.83f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = animationDurationMillis, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse // Reverses direction instead of jumping back to start
+            repeatMode = RepeatMode.Reverse
         ),
         label = "ShaderTime"
     )

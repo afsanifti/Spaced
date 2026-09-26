@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,12 +42,13 @@ import com.example.spaced.ui.theme.TrackTextStyle
 @Composable
 fun TaskSessionBottomBar(
     isPlaying: Boolean,
+    isBreakMode: Boolean,
     onPlayPauseClick: () -> Unit,
     onResetClick: () -> Unit,
+    onSkipClick: () -> Unit,
     onStopClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // 1. Animated side button width: 95.dp when stopped -> 74.dp when playing
     val sideButtonWidth by animateDpAsState(
         targetValue = if (isPlaying) 74.dp else 95.dp,
         animationSpec = spring(
@@ -56,7 +58,6 @@ fun TaskSessionBottomBar(
         label = "SideButtonWidth"
     )
 
-    // 2. Animated shape for center button: Pill shape (47.5.dp) -> Squircle (30.dp)
     val centerCornerRadius by animateDpAsState(
         targetValue = if (isPlaying) 30.dp else 47.5.dp,
         animationSpec = spring(
@@ -66,53 +67,74 @@ fun TaskSessionBottomBar(
         label = "CenterCornerRadius"
     )
 
-    // 3. Animated background color for center button
+    val targetCenterBg = when {
+        isBreakMode -> MaterialTheme.colorScheme.tertiary
+        isPlaying -> MaterialTheme.colorScheme.secondary
+        else -> MaterialTheme.colorScheme.primary
+    }
+
+    val targetCenterContent = when {
+        isBreakMode -> MaterialTheme.colorScheme.onTertiary
+        isPlaying -> MaterialTheme.colorScheme.onSecondary
+        else -> MaterialTheme.colorScheme.onPrimary
+    }
+
     val centerBgColor by animateColorAsState(
-        targetValue = if (isPlaying) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary,
+        targetValue = targetCenterBg,
         label = "CenterBgColor"
     )
 
-    // 4. Animated text/icon color for center button
     val centerContentColor by animateColorAsState(
-        targetValue = if (isPlaying) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onTertiary,
+        targetValue = targetCenterContent,
         label = "CenterContentColor"
     )
 
     val sideButtonBgColor = MaterialTheme.colorScheme.surfaceContainerHigh
     val sideIconColor = MaterialTheme.colorScheme.onSecondaryContainer
+    val buttonHeight = 95.dp
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp)
+            .padding(top = 16.dp, bottom = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // --- Left Button: Reset ---
+        // --- Left Action Button (Reset in Focus mode / Skip in Break mode) ---
         Surface(
-            onClick = onResetClick,
+            onClick = if (isBreakMode) onSkipClick else onResetClick,
             modifier = Modifier
                 .width(sideButtonWidth)
-                .height(95.dp),
+                .height(buttonHeight),
             shape = CircleShape,
             color = sideButtonBgColor
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Rounded.RestartAlt,
-                    contentDescription = "Reset",
-                    tint = sideIconColor,
-                    modifier = Modifier.size(28.dp)
-                )
+                AnimatedContent(
+                    targetState = isBreakMode,
+                    transitionSpec = {
+                        (fadeIn() + scaleIn()).togetherWith(fadeOut() + scaleOut())
+                    },
+                    contentAlignment = Alignment.Center,
+                    label = "LeftButtonContent"
+                ) { inBreak ->
+                    Icon(
+                        imageVector = if (inBreak) Icons.Rounded.SkipNext else Icons.Rounded.RestartAlt,
+                        contentDescription = if (inBreak) "Skip Break" else "Reset",
+                        tint = sideIconColor,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
         }
 
-        // --- Center Button: Play / Pause ---
+        // --- Play / Pause ---
         Surface(
             onClick = onPlayPauseClick,
             modifier = Modifier
                 .weight(1f)
-                .height(95.dp),
+                .height(buttonHeight),
             shape = RoundedCornerShape(centerCornerRadius),
             color = centerBgColor
         ) {
@@ -145,12 +167,12 @@ fun TaskSessionBottomBar(
             }
         }
 
-        // --- Right Button: Stop ---
+        // --- Stop ---
         Surface(
             onClick = onStopClick,
             modifier = Modifier
                 .width(sideButtonWidth)
-                .height(95.dp),
+                .height(buttonHeight),
             shape = CircleShape,
             color = sideButtonBgColor
         ) {
