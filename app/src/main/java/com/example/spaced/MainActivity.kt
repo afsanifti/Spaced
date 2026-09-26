@@ -6,8 +6,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,8 +46,9 @@ import com.example.spaced.ui.screens.HomeScreen
 import com.example.spaced.ui.screens.SettingsScreen
 import com.example.spaced.ui.screens.TaskSessionScreen
 import com.example.spaced.ui.screens.TrackScreen
-import com.example.spaced.ui.theme.AppThemeMode
+import com.example.spaced.ui.theme.DarkThemeConfig
 import com.example.spaced.ui.theme.SpacedTheme
+import com.materialkolor.PaletteStyle
 import java.time.LocalDate
 
 object Routes {
@@ -59,12 +66,15 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val systemInDark = isSystemInDarkTheme()
-            var currentThemeMode by rememberSaveable { mutableStateOf(AppThemeMode.DYNAMIC) }
 
-            val isDark = when (currentThemeMode) {
-                AppThemeMode.DARK -> true
-                AppThemeMode.LIGHT -> false
-                AppThemeMode.DYNAMIC -> systemInDark
+            var darkThemeConfig by rememberSaveable { mutableStateOf(DarkThemeConfig.SYSTEM) }
+            var useDynamicColor by rememberSaveable { mutableStateOf(true) }
+            var paletteStyle by rememberSaveable { mutableStateOf(PaletteStyle.TonalSpot) }
+
+            val isDark = when (darkThemeConfig) {
+                DarkThemeConfig.DARK -> true
+                DarkThemeConfig.LIGHT -> false
+                DarkThemeConfig.SYSTEM -> systemInDark
             }
 
             enableEdgeToEdge(
@@ -78,12 +88,18 @@ class MainActivity : ComponentActivity() {
                 window.isNavigationBarContrastEnforced = false
             }
 
-            SpacedTheme(themeMode = currentThemeMode) {
+            SpacedTheme(
+                darkThemeConfig = darkThemeConfig,
+                useDynamicColor = useDynamicColor,
+                paletteStyle = paletteStyle
+            ) {
                 AppNavigation(
-                    currentThemeMode = currentThemeMode,
-                    onThemeModeChanged = { updatedMode ->
-                        currentThemeMode = updatedMode
-                    }
+                    darkThemeConfig = darkThemeConfig,
+                    onDarkThemeConfigChanged = { darkThemeConfig = it },
+                    useDynamicColor = useDynamicColor,
+                    onDynamicColorChanged = { useDynamicColor = it },
+                    paletteStyle = paletteStyle,
+                    onPaletteStyleChanged = { paletteStyle = it }
                 )
             }
         }
@@ -92,8 +108,12 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigation(
-    currentThemeMode: AppThemeMode,
-    onThemeModeChanged: (AppThemeMode) -> Unit
+    darkThemeConfig: DarkThemeConfig,
+    onDarkThemeConfigChanged: (DarkThemeConfig) -> Unit,
+    useDynamicColor: Boolean,
+    onDynamicColorChanged: (Boolean) -> Unit,
+    paletteStyle: PaletteStyle,
+    onPaletteStyleChanged: (PaletteStyle) -> Unit
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -102,6 +122,12 @@ fun AppNavigation(
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var isCalendarExpanded by remember { mutableStateOf(false) }
     var isHomeScreenAtTop by remember { mutableStateOf(true) }
+    var isBottomBarVisible by remember { mutableStateOf(true) }
+
+    // Reset navigation bar visibility when changing screens
+    LaunchedEffect(currentRoute) {
+        isBottomBarVisible = true
+    }
 
     val sampleTasks = remember {
         listOf(
@@ -142,8 +168,13 @@ fun AppNavigation(
 
                 composable(route = Routes.SETTINGS) {
                     SettingsScreen(
-                        currentThemeMode = currentThemeMode,
-                        onThemeModeChanged = onThemeModeChanged
+                        darkThemeConfig = darkThemeConfig,
+                        onDarkThemeConfigChanged = onDarkThemeConfigChanged,
+                        useDynamicColor = useDynamicColor,
+                        onDynamicColorChanged = onDynamicColorChanged,
+                        paletteStyle = paletteStyle,
+                        onPaletteStyleChanged = onPaletteStyleChanged,
+                        onScrollStateChanged = { isVisible -> isBottomBarVisible = isVisible }
                     )
                 }
 
@@ -176,25 +207,33 @@ fun AppNavigation(
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.CenterEnd
+                    // Floating Action Button
+                    AnimatedVisibility(
+                        visible = isBottomBarVisible && currentRoute == Routes.HOME,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
                     ) {
-                        TrackFab(
-                            onClick = {
-                                if (isCalendarExpanded) {
-                                    isCalendarExpanded = false
-                                } else {
-                                    navController.navigate(Routes.TRACK)
-                                }
-                            },
-                            isExpanded = isHomeScreenAtTop && !isCalendarExpanded
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            TrackFab(
+                                onClick = {
+                                    if (isCalendarExpanded) {
+                                        isCalendarExpanded = false
+                                    } else {
+                                        navController.navigate(Routes.TRACK)
+                                    }
+                                },
+                                isExpanded = currentRoute == Routes.HOME && isHomeScreenAtTop && !isCalendarExpanded
+                            )
+                        }
                     }
 
-                    if (isHomeScreenAtTop || isCalendarExpanded) {
+                    // CalendarBar only displays on Home Screen
+                    if (currentRoute == Routes.HOME && (isHomeScreenAtTop || isCalendarExpanded)) {
                         CalendarBar(
                             selectedDate = selectedDate,
                             onDateSelected = { selectedDate = it },
@@ -203,18 +242,25 @@ fun AppNavigation(
                         )
                     }
 
-                    AppNavigationBar(
-                        currentRoute = currentRoute,
-                        onItemSelected = { selectedItem ->
-                            navController.navigate(selectedItem.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                    // Bottom Navigation Bar with shrink/slide animation on scroll
+                    AnimatedVisibility(
+                        visible = isBottomBarVisible,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                    ) {
+                        AppNavigationBar(
+                            currentRoute = currentRoute,
+                            onItemSelected = { selectedItem ->
+                                navController.navigate(selectedItem.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }

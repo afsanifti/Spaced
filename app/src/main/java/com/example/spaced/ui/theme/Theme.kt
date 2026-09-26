@@ -20,10 +20,10 @@ import com.materialkolor.rememberDynamicMaterialThemeState
 // Seed color generated from MaterialKolor Builder
 val SeedColor = Color(0xFF4C5CDC)
 
-enum class AppThemeMode {
-    DARK,       // Force Dark Theme with Seed Color
-    LIGHT,      // Force Light Theme with Seed Color
-    DYNAMIC     // Extract Android 12+ Wallpaper accent or fallback to Seed Color
+enum class DarkThemeConfig {
+    SYSTEM, // Follow device system theme
+    LIGHT,  // Force Light mode
+    DARK    // Force Dark mode
 }
 
 val ExpressiveShapes = Shapes(
@@ -35,31 +35,33 @@ val ExpressiveShapes = Shapes(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SpacedTheme(
-    themeMode: AppThemeMode = AppThemeMode.DYNAMIC,
+    darkThemeConfig: DarkThemeConfig = DarkThemeConfig.SYSTEM,
+    useDynamicColor: Boolean = true,
+    paletteStyle: PaletteStyle = PaletteStyle.TonalSpot,
     systemInDarkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
 
-    // 1. Determine dark vs light mode
-    val isDark = when (themeMode) {
-        AppThemeMode.DARK -> true
-        AppThemeMode.LIGHT -> false
-        AppThemeMode.DYNAMIC -> systemInDarkTheme
+    // 1. Determine dark vs light mode independently from dynamic color source
+    val isDark = when (darkThemeConfig) {
+        DarkThemeConfig.DARK -> true
+        DarkThemeConfig.LIGHT -> false
+        DarkThemeConfig.SYSTEM -> systemInDarkTheme
     }
 
     // 2. Derive seed color (Wallpaper dynamic primary on Android 12+, or SeedColor preset)
-    val effectiveSeedColor = if (themeMode == AppThemeMode.DYNAMIC && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    val effectiveSeedColor = if (useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         val dynamicScheme = if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         dynamicScheme.primary
     } else {
         SeedColor
     }
 
-    // 3. Generate MaterialKolor Expressive state
+    // 3. Generate MaterialKolor Expressive state with user-selected PaletteStyle
     val dynamicThemeState = rememberDynamicMaterialThemeState(
         isDark = isDark,
-        style = PaletteStyle.Vibrant,
+        style = paletteStyle,
         specVersion = ColorSpec.SpecVersion.SPEC_2025,
         seedColor = effectiveSeedColor,
     )
