@@ -43,6 +43,7 @@ import com.example.spaced.ui.components.calender.CalendarBar
 import com.example.spaced.ui.components.navigation.AppNavigationBar
 import com.example.spaced.ui.components.navigation.TrackFab
 import com.example.spaced.ui.screens.HomeScreen
+import com.example.spaced.ui.screens.PomodoroScreen
 import com.example.spaced.ui.screens.SettingsScreen
 import com.example.spaced.ui.screens.TaskSessionScreen
 import com.example.spaced.ui.screens.TrackScreen
@@ -54,6 +55,7 @@ import java.time.LocalDate
 object Routes {
     const val HOME = "home"
     const val SETTINGS = "settings"
+    const val POMODORO = "pomodoro" // 👈 Added route
     const val TRACK = "track"
     const val SESSION_PATTERN = "session/{taskId}"
 
@@ -182,6 +184,12 @@ fun AppNavigation(
                     TrackScreen(
                         onCloseClick = { navController.popBackStack() },
                         onStartTrackingClick = { navController.popBackStack() }
+                    )
+                }
+
+                composable(route = Routes.POMODORO) {
+                    PomodoroScreen(
+                        onScrollStateChanged = { isVisible -> isBottomBarVisible = isVisible }
                     )
                 }
 
