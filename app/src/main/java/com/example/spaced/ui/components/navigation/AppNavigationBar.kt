@@ -1,6 +1,5 @@
 package com.example.spaced.ui.components.navigation
 
-import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.LightMode
@@ -16,8 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 sealed class BottomNavItem(
     val route: String,
@@ -33,7 +30,8 @@ sealed class BottomNavItem(
 @Composable
 fun AppNavigationBar(
     currentRoute: String = BottomNavItem.Home.route,
-    onItemSelected: (BottomNavItem) -> Unit = {}
+    onItemSelected: (BottomNavItem) -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val items = listOf(
         BottomNavItem.Home,
@@ -43,10 +41,9 @@ fun AppNavigationBar(
     )
 
     NavigationBar(
-        modifier = Modifier.height(80.dp),
+        modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         contentColor = MaterialTheme.colorScheme.onSurface
-
     ) {
         items.forEach { item ->
             val isSelected = currentRoute == item.route
@@ -63,7 +60,7 @@ fun AppNavigationBar(
                 label = {
                     Text(
                         text = item.label,
-                        fontSize = 12.sp,
+                        style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                     )
                 },

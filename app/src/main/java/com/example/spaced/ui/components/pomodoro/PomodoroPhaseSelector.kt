@@ -4,10 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowRight
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CenterFocusWeak
 import androidx.compose.material.icons.outlined.Coffee
 import androidx.compose.material.icons.outlined.EventSeat
@@ -21,9 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.spaced.ui.theme.ListItemTextStyle
+import com.example.spaced.ui.theme.NormalFontFamily
 import com.example.spaced.ui.utils.PomodoroPhase
 import java.util.Locale
 
@@ -45,28 +48,6 @@ fun PomodoroPhaseSelector(
     onOpenTimePicker: (PomodoroPhase) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp
-
-    // Dynamic item height & typography based on screen height
-    val (itemMinHeight, overlineStyle, titleStyle) = when {
-        screenHeight < 640 -> Triple(
-            44.dp,
-            MaterialTheme.typography.labelSmall,
-            MaterialTheme.typography.bodyMedium
-        )
-        screenHeight < 740 -> Triple(
-            52.dp,
-            MaterialTheme.typography.bodySmall,
-            MaterialTheme.typography.titleSmall
-        )
-        else -> Triple(
-            60.dp,
-            MaterialTheme.typography.bodySmall,
-            MaterialTheme.typography.titleMedium
-        )
-    }
-
     val items = listOf(
         PhaseItem(
             phase = PomodoroPhase.FOCUS,
@@ -97,9 +78,7 @@ fun PomodoroPhaseSelector(
         ) {
             items.forEachIndexed { index, item ->
                 SegmentedListItem(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = itemMinHeight),
+                    modifier = Modifier.height(58.dp),
                     onClick = {
                         onPhaseSelected(item.phase)
                         onOpenTimePicker(item.phase)
@@ -119,29 +98,33 @@ fun PomodoroPhaseSelector(
                                 MaterialTheme.colorScheme.primary
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant
-                            }
+                            },
+                            modifier = Modifier.size(20.dp)
                         )
                     },
                     overlineContent = {
                         Text(
                             text = item.title,
-                            style = overlineStyle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            fontSize = 11.sp,
+                            fontFamily = NormalFontFamily,
+                            fontWeight = FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     },
                     content = {
                         Text(
                             text = formatSeconds(item.durationSec),
-                            style = titleStyle,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            style = ListItemTextStyle,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     },
                     trailingContent = {
                         Icon(
-                            imageVector = Icons.Default.ArrowRight,
+                            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                             contentDescription = "Edit ${item.title}",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 )

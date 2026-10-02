@@ -1,141 +1,426 @@
 package com.example.spaced.ui.components.pomodoro
 
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.Pause
-import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import com.example.spaced.ui.theme.TrackTextStyle
+import kotlinx.coroutines.launch
+
+private val BUTTON_HEIGHT = 95.dp
 
 @Composable
 fun PomodoroActionButtons(
-    isTimerRunning: Boolean,
-    onTogglePlayPause: () -> Unit,
-    onSkipClick: () -> Unit,
+    isSessionActive: Boolean,
+    isPlaying: Boolean,
+    isBreakMode: Boolean,
+    onStartSession: () -> Unit,
+    onPlayPauseClick: () -> Unit,
     onResetClick: () -> Unit,
+    onSkipClick: () -> Unit,
+    onStopClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val pinkAccent = Color(0xFFFA7BB9)
-    val darkButtonBg = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.8f)
+    // --- Base Layout & Width Animations ---
+    val sideButtonWidth by animateDpAsState(
+        targetValue = when {
+            !isSessionActive -> 0.dp
+            isPlaying -> 74.dp
+            else -> 95.dp
+        },
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "SideButtonWidth"
+    )
 
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp
+    val sideButtonAlpha by animateFloatAsState(
+        targetValue = if (isSessionActive) 1f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "SideButtonAlpha"
+    )
 
-    // Responsive container height
-    val containerHeight = when {
-        screenHeight < 640 -> 56.dp
-        screenHeight < 740 -> 64.dp
-        else -> 72.dp
+    val sideButtonScale by animateFloatAsState(
+        targetValue = if (isSessionActive) 1f else 0.4f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "SideButtonScale"
+    )
+
+    val centerMaxWidth by animateDpAsState(
+        targetValue = if (isSessionActive) 600.dp else 180.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "CenterMaxWidth"
+    )
+
+    val centerCornerRadius by animateDpAsState(
+        targetValue = when {
+            !isSessionActive || !isPlaying -> 47.5.dp
+            else -> 30.dp
+        },
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "CenterCornerRadius"
+    )
+
+    val itemSpacing by animateDpAsState(
+        targetValue = if (isSessionActive) 10.dp else 0.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "ItemSpacing"
+    )
+
+    // --- Dynamic Color Calculations ---
+    val targetCenterBg = when {
+        !isSessionActive -> MaterialTheme.colorScheme.tertiary
+        isBreakMode -> MaterialTheme.colorScheme.tertiary
+        isPlaying -> MaterialTheme.colorScheme.secondary
+        else -> MaterialTheme.colorScheme.primary
     }
 
-    // Increased side paddings (scales with device height)
-    val sidePadding = when {
-        screenHeight < 640 -> 20.dp
-        screenHeight < 740 -> 24.dp
-        else -> 28.dp
+    val targetCenterContent = when {
+        !isSessionActive -> MaterialTheme.colorScheme.onTertiary
+        isBreakMode -> MaterialTheme.colorScheme.onTertiary
+        isPlaying -> MaterialTheme.colorScheme.onSecondary
+        else -> MaterialTheme.colorScheme.onPrimary
     }
 
-    val textStyle = when {
-        screenHeight < 640 -> MaterialTheme.typography.titleSmall
-        else -> MaterialTheme.typography.titleMedium
-    }
+    val centerBgColor by animateColorAsState(targetValue = targetCenterBg, label = "CenterBgColor")
+    val centerContentColor by animateColorAsState(targetValue = targetCenterContent, label = "CenterContentColor")
+
+    val sideButtonBgColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val sideIconColor = MaterialTheme.colorScheme.onSecondaryContainer
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = sidePadding)
-            .height(containerHeight),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(horizontal = 20.dp)
+            .padding(top = 16.dp, bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(itemSpacing, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 1. Play / Pause Button (Horizontal Capsule)
-        Button(
-            onClick = onTogglePlayPause,
-            shape = CircleShape,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = pinkAccent,
-                contentColor = Color(0xFF32001E)
-            ),
+        // --- Left Action Button: Reset ---
+        TerminalSideButton(
+            icon = Icons.Rounded.RestartAlt,
+            contentDescription = "Reset Timer",
+            baseWidth = sideButtonWidth,
+            scale = sideButtonScale,
+            alpha = sideButtonAlpha,
+            containerColor = sideButtonBgColor,
+            contentColor = sideIconColor,
+            onClick = onResetClick,
+            modifier = Modifier.zIndex(0f)
+        )
+
+        // --- Center Action Button ---
+        TerminalCenterButton(
+            isSessionActive = isSessionActive,
+            isPlaying = isPlaying,
+            cornerRadius = centerCornerRadius,
+            containerColor = centerBgColor,
+            contentColor = centerContentColor,
+            onClick = {
+                if (isSessionActive) onPlayPauseClick() else onStartSession()
+            },
+            onLongClick = {
+                if (isSessionActive) onStopClick()
+            },
             modifier = Modifier
+                .zIndex(1f)
                 .weight(1f)
-                .fillMaxHeight()
-        ) {
+                .widthIn(max = centerMaxWidth)
+        )
+
+        // --- Right Action Button: Skip ---
+        TerminalSideButton(
+            icon = Icons.Rounded.SkipNext,
+            contentDescription = "Skip Phase",
+            baseWidth = sideButtonWidth,
+            scale = sideButtonScale,
+            alpha = sideButtonAlpha,
+            containerColor = sideButtonBgColor,
+            contentColor = sideIconColor,
+            onClick = onSkipClick,
+            modifier = Modifier.zIndex(0f)
+        )
+    }
+}
+
+// ============================================================================
+// Internal Sub-Composables
+// ============================================================================
+
+@Composable
+private fun TerminalSideButton(
+    icon: ImageVector,
+    contentDescription: String,
+    baseWidth: Dp,
+    scale: Float,
+    alpha: Float,
+    containerColor: Color,
+    contentColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val pressedWidthOffset by animateDpAsState(
+        targetValue = if (isPressed) 20.dp else 0.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "PressedWidthOffset"
+    )
+
+    val cornerRadius by animateDpAsState(
+        targetValue = if (isPressed) 22.dp else 47.5.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "SideCornerRadius"
+    )
+
+    val currentShape = RoundedCornerShape(cornerRadius)
+
+    Surface(
+        onClick = onClick,
+        interactionSource = interactionSource,
+        modifier = modifier
+            .width(baseWidth + pressedWidthOffset)
+            .height(BUTTON_HEIGHT)
+            .graphicsLayer {
+                this.alpha = alpha
+                this.scaleX = scale
+                this.scaleY = scale
+            },
+        shape = currentShape,
+        color = containerColor
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = contentColor,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun TerminalCenterButton(
+    isSessionActive: Boolean,
+    isPlaying: Boolean,
+    cornerRadius: Dp,
+    containerColor: Color,
+    contentColor: Color,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scope = rememberCoroutineScope()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    // Hold progress state for slow error color fill (0f -> 1f)
+    val holdProgress = remember { Animatable(0f) }
+    var isHoldCompleted by remember { mutableStateOf(false) }
+
+    val errorBgColor = MaterialTheme.colorScheme.error
+    val errorContentColor = MaterialTheme.colorScheme.onError
+
+    // Interpolate container and content colors based on hold progress
+    val animatedBgColor = lerp(containerColor, errorBgColor, holdProgress.value)
+    val animatedContentColor = lerp(contentColor, errorContentColor, holdProgress.value)
+
+    val pressedScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "CenterPressedScale"
+    )
+
+    val centerShape = RoundedCornerShape(cornerRadius)
+
+    Surface(
+        modifier = modifier
+            .height(BUTTON_HEIGHT)
+            .graphicsLayer {
+                scaleX = pressedScale
+                scaleY = pressedScale
+            }
+            .clip(centerShape)
+            .pointerInput(isSessionActive) {
+                detectTapGestures(
+                    onTap = {
+                        if (!isHoldCompleted) {
+                            onClick()
+                        }
+                    },
+                    onPress = { offset ->
+                        isHoldCompleted = false
+                        val press = PressInteraction.Press(offset)
+                        interactionSource.emit(press)
+
+                        if (isSessionActive) {
+                            val holdJob = scope.launch {
+                                holdProgress.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec = tween(
+                                        durationMillis = 800,
+                                        easing = LinearEasing
+                                    )
+                                )
+                                if (holdProgress.value >= 1f) {
+                                    isHoldCompleted = true
+                                    onLongClick()
+                                    // Immediately bounce color back to normal upon action trigger
+                                    holdProgress.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioLowBouncy,
+                                            stiffness = Spring.StiffnessMedium
+                                        )
+                                    )
+                                }
+                            }
+
+                            val released = tryAwaitRelease()
+                            holdJob.cancel()
+
+                            interactionSource.emit(
+                                if (released) PressInteraction.Release(press)
+                                else PressInteraction.Cancel(press)
+                            )
+
+                            // Reset color if finger was released early
+                            if (!isHoldCompleted && holdProgress.value > 0f) {
+                                scope.launch {
+                                    holdProgress.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioLowBouncy,
+                                            stiffness = Spring.StiffnessHigh
+                                        )
+                                    )
+                                }
+                            }
+                        } else {
+                            val released = tryAwaitRelease()
+                            interactionSource.emit(
+                                if (released) PressInteraction.Release(press)
+                                else PressInteraction.Cancel(press)
+                            )
+                        }
+                    }
+                )
+            },
+        shape = centerShape,
+        color = animatedBgColor
+    ) {
+        AnimatedContent(
+            targetState = Pair(isSessionActive, isPlaying),
+            transitionSpec = {
+                (fadeIn() + scaleIn()).togetherWith(fadeOut() + scaleOut())
+            },
+            contentAlignment = Alignment.Center,
+            label = "CenterButtonContent"
+        ) { (active, playing) ->
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                val icon = when {
+                    !active -> Icons.Rounded.PlayArrow
+                    playing -> Icons.Rounded.Pause
+                    else -> Icons.Rounded.PlayArrow
+                }
+
+                val text = when {
+                    !active -> "Play"
+                    playing -> "Pause"
+                    else -> "Play"
+                }
+
                 Icon(
-                    imageVector = if (isTimerRunning) Icons.Outlined.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isTimerRunning) "Pause" else "Play"
+                    imageVector = icon,
+                    contentDescription = text,
+                    tint = animatedContentColor,
+                    modifier = Modifier.size(32.dp)
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (isTimerRunning) "Pause" else "Play",
-                    style = textStyle,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        // 2. Skip Button (Middle - 1:1 Perfect Circle)
-        Surface(
-            shape = CircleShape,
-            color = darkButtonBg,
-            modifier = Modifier
-                .fillMaxHeight()
-                .aspectRatio(1f)
-                .clip(CircleShape)
-                .clickable(onClick = onSkipClick)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Rounded.SkipNext,
-                    contentDescription = "Skip Phase",
-                    tint = Color.White
-                )
-            }
-        }
-
-        // 3. Reset Button (Right - Vertical Capsule)
-        Surface(
-            shape = CircleShape,
-            color = darkButtonBg,
-            modifier = Modifier
-                .fillMaxHeight()
-                .aspectRatio(0.72f)
-                .clip(CircleShape)
-                .clickable(onClick = onResetClick)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.Rounded.Refresh,
-                    contentDescription = "Reset Timer",
-                    tint = Color.White
+                    text = text,
+                    fontSize = 20.sp,
+                    style = TrackTextStyle,
+                    color = animatedContentColor
                 )
             }
         }
