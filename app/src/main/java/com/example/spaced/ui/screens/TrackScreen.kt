@@ -2,8 +2,8 @@ package com.example.spaced.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,12 +30,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.spaced.ui.components.navigation.TrackTopBar
 import com.example.spaced.ui.components.forms.DifficultySelectorSection
 import com.example.spaced.ui.components.forms.StudiedOnSection
 import com.example.spaced.ui.components.forms.SubjectTagAndChapterRow
-import com.example.spaced.ui.components.sheets.SubjectTagBottomSheet
-import com.example.spaced.ui.components.TrackTopBar
 import com.example.spaced.ui.components.forms.getTodayFormatted
+import com.example.spaced.ui.components.sheets.SubjectTagBottomSheet
 import com.example.spaced.ui.theme.TextFieldTitleTextStyle
 import com.example.spaced.ui.theme.TrackTextStyle
 import com.example.spaced.ui.utils.TaskDifficulty
@@ -89,7 +89,7 @@ fun TrackScreen(
     }
 
     // Displays selected tag or defaults to "Select Tag" when none is chosen
-    val subjectDisplayText = selectedTag ?: "Select Tag"
+    val subjectDisplayText = selectedTag ?: "None"
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -110,14 +110,14 @@ fun TrackScreen(
                     top = innerPadding.calculateTopPadding(),
                     start = 20.dp,
                     end = 20.dp,
-                    bottom = innerPadding.calculateBottomPadding() + 4.dp
+                    bottom = innerPadding.calculateBottomPadding() + 8.dp
                 ),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // GROUP 1: Task Title
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "Task Title*",
+                    text = "Task Title *",
                     style = TextFieldTitleTextStyle,
                     color = onSurface
                 )
@@ -141,12 +141,17 @@ fun TrackScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .height(52.dp)
                 )
             }
 
-            // GROUP 2: Description
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // GROUP 2: Description (Dynamically resizes using weight)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 Text(
                     text = "Description (Optional)",
                     style = TextFieldTitleTextStyle,
@@ -171,12 +176,12 @@ fun TrackScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(100.dp)
+                        .fillMaxHeight()
                 )
             }
 
             // GROUP 3: Reference
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
                     text = "Reference (Optional)",
                     style = TextFieldTitleTextStyle,
@@ -202,7 +207,7 @@ fun TrackScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .height(52.dp)
                 )
             }
 
@@ -241,9 +246,7 @@ fun TrackScreen(
                 fieldContainerColor = fieldContainerColor
             )
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            // GROUP 7: Start Tracking Button with Validation
+            // GROUP 7: Start Tracking Button
             Button(
                 onClick = onStartTrackingClick,
                 enabled = isFormValid,
@@ -255,7 +258,7 @@ fun TrackScreen(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp)
+                    .height(50.dp)
             ) {
                 Text(
                     text = "Start Tracking",

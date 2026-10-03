@@ -12,6 +12,9 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.CenterFocusWeak
 import androidx.compose.material.icons.outlined.Coffee
 import androidx.compose.material.icons.outlined.EventSeat
+import androidx.compose.material.icons.rounded.AirlineSeatReclineExtra
+import androidx.compose.material.icons.rounded.CenterFocusStrong
+import androidx.compose.material.icons.rounded.Coffee
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
@@ -52,19 +55,19 @@ fun PomodoroPhaseSelector(
         PhaseItem(
             phase = PomodoroPhase.FOCUS,
             title = "Focus Period",
-            icon = Icons.Outlined.CenterFocusWeak,
+            icon = Icons.Rounded.CenterFocusStrong,
             durationSec = focusDurationSec
         ),
         PhaseItem(
             phase = PomodoroPhase.SHORT_BREAK,
             title = "Short break",
-            icon = Icons.Outlined.Coffee,
+            icon = Icons.Rounded.Coffee,
             durationSec = shortBreakDurationSec
         ),
         PhaseItem(
             phase = PomodoroPhase.LONG_BREAK,
             title = "Long break",
-            icon = Icons.Outlined.EventSeat,
+            icon = Icons.Rounded.AirlineSeatReclineExtra,
             durationSec = longBreakDurationSec
         )
     )

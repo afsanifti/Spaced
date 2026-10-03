@@ -45,7 +45,7 @@ fun SubjectTagAndChapterRow(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "Subject Tag",
+                text = "Subject Tag *",
                 style = TextFieldTitleTextStyle,
                 color = onSurface
             )

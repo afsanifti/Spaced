@@ -182,7 +182,7 @@ private fun MonthCalendarView(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             ),
                             color = when {
-                                isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                                isSelected -> MaterialTheme.colorScheme.onPrimary
                                 isCurrentMonth -> MaterialTheme.colorScheme.onSurface
                                 else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
                             }

@@ -21,10 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.spaced.ui.theme.ListItemTextStyle
+import com.example.spaced.ui.theme.NormalFontFamily
 
 @Composable
 fun PomodoroTimelineCard(
-    upNextText: String,
+    nextPhaseName: String,
+    nextPhaseDurationMin: Int,
     currentStepIndex: Int,
     totalSteps: Int = 8,
     modifier: Modifier = Modifier
@@ -35,19 +38,30 @@ fun PomodoroTimelineCard(
     ) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(50.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp)
             ) {
+                // Container Header / Label
                 Text(
-                    text = upNextText,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = 20.sp
+                    text = "Up next",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = NormalFontFamily,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 12.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Next Phase Title
+                Text(
+                    text = "$nextPhaseName ($nextPhaseDurationMin min)",
+                    style = ListItemTextStyle,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

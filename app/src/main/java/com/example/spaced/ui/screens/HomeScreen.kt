@@ -28,7 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import com.example.spaced.data.model.Task
-import com.example.spaced.ui.components.TopDateHeader
+import com.example.spaced.ui.components.navigation.TopDateHeader
 import com.example.spaced.ui.components.task.TaskCardItem
 import com.example.spaced.ui.components.task.TaskTab
 import com.example.spaced.ui.components.task.TaskTabRow
@@ -63,7 +63,7 @@ fun HomeScreen(
         onScrollStateChanged(isAtTop)
     }
 
-    // Calculate dynamic bottom padding including system navigation bar inset
+    // Dynamic bottom padding including system navigation bar inset
     val navBarBottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     Scaffold(
@@ -76,6 +76,7 @@ fun HomeScreen(
             TopAppBar(
                 title = { TopDateHeader(selectedDate = selectedDate, onProfileClick = onProfileClick) },
                 scrollBehavior = scrollBehavior,
+                windowInsets = TopAppBarDefaults.windowInsets,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.background
@@ -87,8 +88,8 @@ fun HomeScreen(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                top = innerPadding.calculateTopPadding() + 38.dp,
-                // 200.dp clearance + system gesture bar inset to push last card above FAB & Nav Bar
+                // Removed the extra + 38.dp offset to eliminate the layout gap
+                top = innerPadding.calculateTopPadding() + 12.dp,
                 bottom = 200.dp + navBarBottomInset
             ),
             verticalArrangement = Arrangement.spacedBy(4.dp)

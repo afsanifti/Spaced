@@ -91,6 +91,14 @@ fun PomodoroScreen(
         1f - (remainingSeconds.toFloat() / totalDurationForCurrentStep.toFloat())
     } else 0f
 
+    val nextStepIndex = (currentStepIndex + 1) % TOTAL_CYCLE_STEPS
+    val nextPhaseName = when {
+        nextStepIndex % 2 == 0 -> "Focus period"
+        nextStepIndex == 7 -> "Long break"
+        else -> "Short break"
+    }
+    val nextPhaseMin = getDurationForStep(nextStepIndex) / 60
+
     LaunchedEffect(Unit) {
         onScrollStateChanged(true)
     }
@@ -249,7 +257,8 @@ fun PomodoroScreen(
                     val nextPhaseMin = getDurationForStep(nextStepIndex) / 60
 
                     PomodoroTimelineCard(
-                        upNextText = "Up next\n$nextPhaseName ($nextPhaseMin min)",
+                        nextPhaseName = nextPhaseName,
+                        nextPhaseDurationMin = nextPhaseMin,
                         currentStepIndex = currentStepIndex,
                         totalSteps = TOTAL_CYCLE_STEPS,
                         modifier = Modifier.fillMaxWidth()

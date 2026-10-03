@@ -1,4 +1,4 @@
-package com.example.spaced.ui.components
+package com.example.spaced.ui.components.navigation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

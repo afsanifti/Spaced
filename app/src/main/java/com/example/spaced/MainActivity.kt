@@ -6,12 +6,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -26,11 +33,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -49,13 +56,14 @@ import com.example.spaced.ui.screens.TaskSessionScreen
 import com.example.spaced.ui.screens.TrackScreen
 import com.example.spaced.ui.theme.DarkThemeConfig
 import com.example.spaced.ui.theme.SpacedTheme
+import com.example.spaced.ui.viewmodels.SettingsViewModel
 import com.materialkolor.PaletteStyle
 import java.time.LocalDate
 
 object Routes {
     const val HOME = "home"
     const val SETTINGS = "settings"
-    const val POMODORO = "pomodoro" // 👈 Added route
+    const val POMODORO = "pomodoro"
     const val TRACK = "track"
     const val SESSION_PATTERN = "session/{taskId}"
 
@@ -63,15 +71,19 @@ object Routes {
 }
 
 class MainActivity : ComponentActivity() {
+
+    private val settingsViewModel: SettingsViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             val systemInDark = isSystemInDarkTheme()
 
-            var darkThemeConfig by rememberSaveable { mutableStateOf(DarkThemeConfig.SYSTEM) }
-            var useDynamicColor by rememberSaveable { mutableStateOf(true) }
-            var paletteStyle by rememberSaveable { mutableStateOf(PaletteStyle.TonalSpot) }
+            // Observe persistent state from DataStore via SettingsViewModel
+            val darkThemeConfig by settingsViewModel.darkThemeConfig.collectAsStateWithLifecycle()
+            val useDynamicColor by settingsViewModel.useDynamicColor.collectAsStateWithLifecycle()
+            val paletteStyle by settingsViewModel.paletteStyle.collectAsStateWithLifecycle()
 
             val isDark = when (darkThemeConfig) {
                 DarkThemeConfig.DARK -> true
@@ -97,11 +109,11 @@ class MainActivity : ComponentActivity() {
             ) {
                 AppNavigation(
                     darkThemeConfig = darkThemeConfig,
-                    onDarkThemeConfigChanged = { darkThemeConfig = it },
+                    onDarkThemeConfigChanged = settingsViewModel::setDarkThemeConfig,
                     useDynamicColor = useDynamicColor,
-                    onDynamicColorChanged = { useDynamicColor = it },
+                    onDynamicColorChanged = settingsViewModel::setUseDynamicColor,
                     paletteStyle = paletteStyle,
-                    onPaletteStyleChanged = { paletteStyle = it }
+                    onPaletteStyleChanged = settingsViewModel::setPaletteStyle
                 )
             }
         }
@@ -151,10 +163,39 @@ fun AppNavigation(
                 navController = navController,
                 startDestination = Routes.HOME,
                 modifier = Modifier.fillMaxSize(),
-                enterTransition = { EnterTransition.None },
-                exitTransition = { ExitTransition.None },
-                popEnterTransition = { EnterTransition.None },
-                popExitTransition = { ExitTransition.None }
+                // Material 3 Expressive Standard: Fade Through for main bottom bar navigation
+                enterTransition = {
+                    fadeIn(
+                        animationSpec = tween(durationMillis = 220, delayMillis = 60, easing = LinearOutSlowInEasing)
+                    ) + scaleIn(
+                        initialScale = 0.92f,
+                        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
+                    )
+                },
+                exitTransition = {
+                    fadeOut(
+                        animationSpec = tween(durationMillis = 90, easing = FastOutLinearInEasing)
+                    ) + scaleOut(
+                        targetScale = 0.96f,
+                        animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing)
+                    )
+                },
+                popEnterTransition = {
+                    fadeIn(
+                        animationSpec = tween(durationMillis = 220, delayMillis = 60, easing = LinearOutSlowInEasing)
+                    ) + scaleIn(
+                        initialScale = 0.92f,
+                        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
+                    )
+                },
+                popExitTransition = {
+                    fadeOut(
+                        animationSpec = tween(durationMillis = 90, easing = FastOutLinearInEasing)
+                    ) + scaleOut(
+                        targetScale = 0.96f,
+                        animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing)
+                    )
+                }
             ) {
                 composable(route = Routes.HOME) {
                     HomeScreen(
@@ -180,7 +221,28 @@ fun AppNavigation(
                     )
                 }
 
-                composable(route = Routes.TRACK) {
+                // Track Screen: Material 3 Shared Axis Y (Slide up from bottom)
+                composable(
+                    route = Routes.TRACK,
+                    enterTransition = {
+                        slideInVertically(
+                            initialOffsetY = { fullHeight -> (fullHeight * 0.15f).toInt() },
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(250))
+                    },
+                    exitTransition = {
+                        slideOutVertically(
+                            targetOffsetY = { fullHeight -> (fullHeight * 0.15f).toInt() },
+                            animationSpec = tween(250, easing = FastOutLinearInEasing)
+                        ) + fadeOut(animationSpec = tween(200))
+                    },
+                    popExitTransition = {
+                        slideOutVertically(
+                            targetOffsetY = { fullHeight -> (fullHeight * 0.15f).toInt() },
+                            animationSpec = tween(250, easing = FastOutLinearInEasing)
+                        ) + fadeOut(animationSpec = tween(200))
+                    }
+                ) {
                     TrackScreen(
                         onCloseClick = { navController.popBackStack() },
                         onStartTrackingClick = { navController.popBackStack() }
@@ -193,9 +255,22 @@ fun AppNavigation(
                     )
                 }
 
+                // Task Session: Material 3 Shared Axis X (Forward Push)
                 composable(
                     route = Routes.SESSION_PATTERN,
-                    arguments = listOf(navArgument("taskId") { type = NavType.StringType })
+                    arguments = listOf(navArgument("taskId") { type = NavType.StringType }),
+                    enterTransition = {
+                        slideInHorizontally(
+                            initialOffsetX = { fullWidth -> fullWidth / 4 },
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(250))
+                    },
+                    popExitTransition = {
+                        slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> fullWidth / 4 },
+                            animationSpec = tween(250, easing = FastOutLinearInEasing)
+                        ) + fadeOut(animationSpec = tween(200))
+                    }
                 ) { backStackEntry ->
                     val taskId = backStackEntry.arguments?.getString("taskId")
                     val task = sampleTasks.find { it.id == taskId }
@@ -218,8 +293,14 @@ fun AppNavigation(
                     // Floating Action Button
                     AnimatedVisibility(
                         visible = isBottomBarVisible && currentRoute == Routes.HOME,
-                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                        enter = slideInVertically(
+                            initialOffsetY = { it },
+                            animationSpec = tween(250, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(200)),
+                        exit = slideOutVertically(
+                            targetOffsetY = { it },
+                            animationSpec = tween(200, easing = FastOutLinearInEasing)
+                        ) + fadeOut(animationSpec = tween(150))
                     ) {
                         Box(
                             modifier = Modifier
@@ -253,8 +334,14 @@ fun AppNavigation(
                     // Bottom Navigation Bar with shrink/slide animation on scroll
                     AnimatedVisibility(
                         visible = isBottomBarVisible,
-                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                        enter = slideInVertically(
+                            initialOffsetY = { it },
+                            animationSpec = tween(250, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(200)),
+                        exit = slideOutVertically(
+                            targetOffsetY = { it },
+                            animationSpec = tween(200, easing = FastOutLinearInEasing)
+                        ) + fadeOut(animationSpec = tween(150))
                     ) {
                         AppNavigationBar(
                             currentRoute = currentRoute,
