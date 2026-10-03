@@ -6,6 +6,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -78,22 +79,18 @@ fun TaskCard(
     val categoryText = if (!chapter.isNullOrBlank()) "$tag · $chapter" else tag
     val progressRatio = if (totalCycles > 0) currentCycle.toFloat() / totalCycles else 0f
 
-    // Spring spec for Dp values (Padding, Corner Radius)
-    val sharedDpSpring = spring<Dp>(
+    // Dynamic stiffness: lower when expanding for smoothness, higher when collapsing for speed
+    val dynamicStiffness = if (isExpanded) Spring.StiffnessMediumLow else Spring.StiffnessMedium
+
+    // Directional specs for Dp and IntSize
+    val dynamicDpSpring = spring<Dp>(
         dampingRatio = Spring.DampingRatioNoBouncy,
-        stiffness = Spring.StiffnessMediumLow
+        stiffness = dynamicStiffness
     )
 
-    // Spring spec for animateContentSize (IntSize)
-    val sharedIntSizeSpring = spring<IntSize>(
+    val dynamicIntSizeSpring = spring<IntSize>(
         dampingRatio = Spring.DampingRatioNoBouncy,
-        stiffness = Spring.StiffnessMediumLow
-    )
-
-    // Spring spec for Float values (Fading)
-    val sharedFloatSpring = spring<Float>(
-        dampingRatio = Spring.DampingRatioNoBouncy,
-        stiffness = Spring.StiffnessMediumLow
+        stiffness = dynamicStiffness
     )
 
     // Hardware-accelerated arrow rotation
@@ -101,7 +98,7 @@ fun TaskCard(
         targetValue = if (isExpanded) 180f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
+            stiffness = dynamicStiffness
         ),
         label = "ArrowRotation"
     )
@@ -109,14 +106,14 @@ fun TaskCard(
     // Animated container corner radius
     val cardCornerRadius by animateDpAsState(
         targetValue = if (isExpanded) 36.dp else 70.dp,
-        animationSpec = sharedDpSpring,
+        animationSpec = dynamicDpSpring,
         label = "CardCornerRadius"
     )
 
     // Animated bottom padding avoids sudden jumps on collapse
     val bottomPadding by animateDpAsState(
         targetValue = if (isExpanded) 32.dp else 24.dp,
-        animationSpec = sharedDpSpring,
+        animationSpec = dynamicDpSpring,
         label = "CardBottomPadding"
     )
 
@@ -127,7 +124,7 @@ fun TaskCard(
             .widthIn(max = 380.dp)
             .fillMaxWidth()
             .clip(cardShape)
-            .animateContentSize(animationSpec = sharedIntSizeSpring)
+            .animateContentSize(animationSpec = dynamicIntSizeSpring)
             .clickable(onClick = onClick),
         shape = cardShape,
         colors = CardDefaults.cardColors(
@@ -166,8 +163,12 @@ fun TaskCard(
                     // Compact progress bar shown only when collapsed
                     AnimatedVisibility(
                         visible = !isExpanded,
-                        enter = fadeIn(animationSpec = sharedFloatSpring) + expandVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)),
-                        exit = fadeOut(animationSpec = sharedFloatSpring) + shrinkVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
+                        enter = fadeIn(animationSpec = tween(180, delayMillis = 100)) + expandVertically(
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                        ),
+                        exit = fadeOut(animationSpec = tween(100)) + shrinkVertically(
+                            animationSpec = spring(stiffness = Spring.StiffnessMedium)
+                        )
                     ) {
                         Column {
                             Spacer(modifier = Modifier.height(10.dp))
@@ -228,8 +229,12 @@ fun TaskCard(
             // --- EXPANDED DETAILS BODY ---
             AnimatedVisibility(
                 visible = isExpanded,
-                enter = expandVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(animationSpec = sharedFloatSpring),
-                exit = shrinkVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(animationSpec = sharedFloatSpring)
+                enter = expandVertically(
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+                ) + fadeIn(animationSpec = tween(200, delayMillis = 50)),
+                exit = shrinkVertically(
+                    animationSpec = spring(stiffness = Spring.StiffnessMedium)
+                ) + fadeOut(animationSpec = tween(100))
             ) {
                 Column(
                     modifier = Modifier

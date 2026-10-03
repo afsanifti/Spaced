@@ -3,6 +3,7 @@ package com.example.spaced.ui.components.pomodoro
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -73,28 +74,37 @@ fun PomodoroActionButtons(
     onStopClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Shared hold progress (0f = normal, 1f = fully held to stop session)
+    val holdProgress = remember { Animatable(0f) }
+    val progressFactor = holdProgress.value
+
     // --- Base Layout & Width Animations ---
+    val baseSideWidth = when {
+        !isSessionActive -> 0.dp
+        isPlaying -> 74.dp
+        else -> 95.dp
+    }
+
+    // Shrink side button target width down to 0 as hold progress reaches 1f
+    val targetSideWidth = baseSideWidth * (1f - progressFactor)
+
     val sideButtonWidth by animateDpAsState(
-        targetValue = when {
-            !isSessionActive -> 0.dp
-            isPlaying -> 74.dp
-            else -> 95.dp
-        },
+        targetValue = targetSideWidth,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessLow
+            stiffness = Spring.StiffnessMediumLow
         ),
         label = "SideButtonWidth"
     )
 
     val sideButtonAlpha by animateFloatAsState(
-        targetValue = if (isSessionActive) 1f else 0f,
+        targetValue = if (isSessionActive) (1f - progressFactor) else 0f,
         animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "SideButtonAlpha"
     )
 
     val sideButtonScale by animateFloatAsState(
-        targetValue = if (isSessionActive) 1f else 0.4f,
+        targetValue = if (isSessionActive) (1f - progressFactor * 0.3f) else 0.4f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -123,8 +133,9 @@ fun PomodoroActionButtons(
         label = "CenterCornerRadius"
     )
 
+    // Reduce spacing as side buttons shrink to allow full expansion
     val itemSpacing by animateDpAsState(
-        targetValue = if (isSessionActive) 10.dp else 0.dp,
+        targetValue = if (isSessionActive) 10.dp * (1f - progressFactor) else 0.dp,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessLow
@@ -181,6 +192,7 @@ fun PomodoroActionButtons(
             cornerRadius = centerCornerRadius,
             containerColor = centerBgColor,
             contentColor = centerContentColor,
+            holdProgress = holdProgress,
             onClick = {
                 if (isSessionActive) onPlayPauseClick() else onStartSession()
             },
@@ -279,6 +291,7 @@ private fun TerminalCenterButton(
     cornerRadius: Dp,
     containerColor: Color,
     contentColor: Color,
+    holdProgress: Animatable<Float, AnimationVector1D>,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -287,8 +300,6 @@ private fun TerminalCenterButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    // Hold progress state for slow error color fill (0f -> 1f)
-    val holdProgress = remember { Animatable(0f) }
     var isHoldCompleted by remember { mutableStateOf(false) }
 
     val errorBgColor = MaterialTheme.colorScheme.error
@@ -331,6 +342,7 @@ private fun TerminalCenterButton(
 
                         if (isSessionActive) {
                             val holdJob = scope.launch {
+                                // Linear expansion during continuous hold
                                 holdProgress.animateTo(
                                     targetValue = 1f,
                                     animationSpec = tween(
@@ -340,8 +352,9 @@ private fun TerminalCenterButton(
                                 )
                                 if (holdProgress.value >= 1f) {
                                     isHoldCompleted = true
-                                    onLongClick()
-                                    // Immediately bounce color back to normal upon action trigger
+                                    onLongClick() // Stops session at once
+
+                                    // Bounce progress back via spring animation
                                     holdProgress.animateTo(
                                         targetValue = 0f,
                                         animationSpec = spring(
@@ -360,14 +373,14 @@ private fun TerminalCenterButton(
                                 else PressInteraction.Cancel(press)
                             )
 
-                            // Reset color if finger was released early
+                            // Spring back smoothly if released before completion
                             if (!isHoldCompleted && holdProgress.value > 0f) {
                                 scope.launch {
                                     holdProgress.animateTo(
                                         targetValue = 0f,
                                         animationSpec = spring(
                                             dampingRatio = Spring.DampingRatioLowBouncy,
-                                            stiffness = Spring.StiffnessHigh
+                                            stiffness = Spring.StiffnessMediumLow
                                         )
                                     )
                                 }

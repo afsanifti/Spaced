@@ -37,7 +37,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -56,9 +59,11 @@ import com.example.spaced.ui.screens.TaskSessionScreen
 import com.example.spaced.ui.screens.TrackScreen
 import com.example.spaced.ui.theme.DarkThemeConfig
 import com.example.spaced.ui.theme.SpacedTheme
-import com.example.spaced.ui.viewmodels.SettingsViewModel
+import com.example.spaced.MainActivityUiState
+import com.example.spaced.MainActivityViewModel
 import com.materialkolor.PaletteStyle
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 object Routes {
     const val HOME = "home"
@@ -72,49 +77,64 @@ object Routes {
 
 class MainActivity : ComponentActivity() {
 
-    private val settingsViewModel: SettingsViewModel by viewModels()
+    private val mainActivityViewModel: MainActivityViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
 
+        var uiState: MainActivityUiState by mutableStateOf(MainActivityUiState.Loading)
+
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mainActivityViewModel.uiState.collect {
+                    uiState = it
+                }
+            }
+        }
+
+        // Keep system splash screen visible until user settings finish loading from DataStore
+        splashScreen.setKeepOnScreenCondition {
+            uiState is MainActivityUiState.Loading
+        }
+
         setContent {
-            val systemInDark = isSystemInDarkTheme()
+            val state = uiState
+            if (state is MainActivityUiState.Success) {
+                val userSettings = state.userSettings
+                val systemInDark = isSystemInDarkTheme()
 
-            // Observe persistent state from DataStore via SettingsViewModel
-            val darkThemeConfig by settingsViewModel.darkThemeConfig.collectAsStateWithLifecycle()
-            val useDynamicColor by settingsViewModel.useDynamicColor.collectAsStateWithLifecycle()
-            val paletteStyle by settingsViewModel.paletteStyle.collectAsStateWithLifecycle()
+                val isDark = when (userSettings.darkThemeConfig) {
+                    DarkThemeConfig.DARK -> true
+                    DarkThemeConfig.LIGHT -> false
+                    DarkThemeConfig.SYSTEM -> systemInDark
+                }
 
-            val isDark = when (darkThemeConfig) {
-                DarkThemeConfig.DARK -> true
-                DarkThemeConfig.LIGHT -> false
-                DarkThemeConfig.SYSTEM -> systemInDark
-            }
-
-            enableEdgeToEdge(
-                statusBarStyle = if (isDark) SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-                else SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
-                navigationBarStyle = if (isDark) SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-                else SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
-            )
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                window.isNavigationBarContrastEnforced = false
-            }
-
-            SpacedTheme(
-                darkThemeConfig = darkThemeConfig,
-                useDynamicColor = useDynamicColor,
-                paletteStyle = paletteStyle
-            ) {
-                AppNavigation(
-                    darkThemeConfig = darkThemeConfig,
-                    onDarkThemeConfigChanged = settingsViewModel::setDarkThemeConfig,
-                    useDynamicColor = useDynamicColor,
-                    onDynamicColorChanged = settingsViewModel::setUseDynamicColor,
-                    paletteStyle = paletteStyle,
-                    onPaletteStyleChanged = settingsViewModel::setPaletteStyle
+                enableEdgeToEdge(
+                    statusBarStyle = if (isDark) SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                    else SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
+                    navigationBarStyle = if (isDark) SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                    else SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
                 )
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    window.isNavigationBarContrastEnforced = false
+                }
+
+                SpacedTheme(
+                    darkThemeConfig = userSettings.darkThemeConfig,
+                    useDynamicColor = userSettings.useDynamicColor,
+                    paletteStyle = userSettings.paletteStyle
+                ) {
+                    AppNavigation(
+                        darkThemeConfig = userSettings.darkThemeConfig,
+                        onDarkThemeConfigChanged = mainActivityViewModel::setDarkThemeConfig,
+                        useDynamicColor = userSettings.useDynamicColor,
+                        onDynamicColorChanged = mainActivityViewModel::setUseDynamicColor,
+                        paletteStyle = userSettings.paletteStyle,
+                        onPaletteStyleChanged = mainActivityViewModel::setPaletteStyle
+                    )
+                }
             }
         }
     }

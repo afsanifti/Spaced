@@ -1,5 +1,9 @@
 package com.example.spaced.ui.screens
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.EaseInBack
 import androidx.compose.animation.core.EaseOutBack
@@ -24,14 +28,18 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.spaced.ui.components.navigation.TitleTopBar
 import com.example.spaced.ui.components.pomodoro.PomodoroActionButtons
 import com.example.spaced.ui.components.pomodoro.PomodoroDurationPickerDialog
@@ -39,7 +47,7 @@ import com.example.spaced.ui.components.pomodoro.PomodoroPhaseSelector
 import com.example.spaced.ui.components.pomodoro.PomodoroTimerCard
 import com.example.spaced.ui.components.pomodoro.PomodoroTimelineCard
 import com.example.spaced.ui.utils.PomodoroPhase
-import kotlinx.coroutines.delay
+import com.example.spaced.ui.viewmodels.PomodoroViewModel
 
 private const val TOTAL_CYCLE_STEPS = 8
 
@@ -47,25 +55,37 @@ private const val TOTAL_CYCLE_STEPS = 8
 fun PomodoroScreen(
     onScrollStateChanged: (isNavVisible: Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(bottom = 80.dp)
+    contentPadding: PaddingValues = PaddingValues(bottom = 80.dp),
+    pomodoroViewModel: PomodoroViewModel = viewModel()
 ) {
-    var sessionTitle by remember { mutableStateOf("Default") }
-    var isEditingTitle by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val timerState by pomodoroViewModel.timerState.collectAsState()
 
-    // Phase Durations (in seconds)
-    var focusDurationSec by remember { mutableIntStateOf(25 * 60) }
-    var shortBreakDurationSec by remember { mutableIntStateOf(5 * 60) }
-    var longBreakDurationSec by remember { mutableIntStateOf(15 * 60) }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = {}
+    )
 
-    // Active Session & Cycle State
-    var isSessionActive by remember { mutableStateOf(false) }
-    var isTimerRunning by remember { mutableStateOf(false) }
-    var currentStepIndex by remember { mutableIntStateOf(0) }
-    var remainingSeconds by remember { mutableIntStateOf(25 * 60) }
+    LaunchedEffect(Unit) {
+        onScrollStateChanged(true)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    var sessionTitle by rememberSaveable { mutableStateOf("Focus Session") }
+    var isEditingTitle by rememberSaveable { mutableStateOf(false) }
+
+    var focusDurationSec by rememberSaveable { mutableIntStateOf(25 * 60) }
+    var shortBreakDurationSec by rememberSaveable { mutableIntStateOf(5 * 60) }
+    var longBreakDurationSec by rememberSaveable { mutableIntStateOf(15 * 60) }
 
     var phaseToEdit by remember { mutableStateOf<PomodoroPhase?>(null) }
 
-    // Derive current phase based on step index (0, 2, 4, 6 = FOCUS | 1, 3, 5 = SHORT_BREAK | 7 = LONG_BREAK)
+    // Read state from service ViewModel
+    val isSessionActive = timerState.isSessionActive
+    val currentStepIndex = timerState.currentStepIndex
+
     val currentPhase = remember(currentStepIndex) {
         when {
             currentStepIndex % 2 == 0 -> PomodoroPhase.FOCUS
@@ -76,7 +96,6 @@ fun PomodoroScreen(
 
     val isBreakMode = currentPhase != PomodoroPhase.FOCUS
 
-    // Helper to retrieve initial duration for any step index
     fun getDurationForStep(stepIndex: Int): Int {
         return when {
             stepIndex % 2 == 0 -> focusDurationSec
@@ -86,36 +105,30 @@ fun PomodoroScreen(
     }
 
     val totalDurationForCurrentStep = getDurationForStep(currentStepIndex)
+    val remainingSeconds = if (isSessionActive) timerState.remainingSeconds else totalDurationForCurrentStep
+    val progress = if (isSessionActive) timerState.progress else 0f
+    val isPlaying = timerState.isRunning
 
-    val progress = if (totalDurationForCurrentStep > 0) {
-        1f - (remainingSeconds.toFloat() / totalDurationForCurrentStep.toFloat())
-    } else 0f
-
-    val nextStepIndex = (currentStepIndex + 1) % TOTAL_CYCLE_STEPS
-    val nextPhaseName = when {
-        nextStepIndex % 2 == 0 -> "Focus period"
-        nextStepIndex == 7 -> "Long break"
-        else -> "Short break"
-    }
-    val nextPhaseMin = getDurationForStep(nextStepIndex) / 60
-
-    LaunchedEffect(Unit) {
-        onScrollStateChanged(true)
-    }
-
-    // Timer Loop & Automatic Auto-Advance
-    LaunchedEffect(isTimerRunning, remainingSeconds) {
-        if (isTimerRunning && remainingSeconds > 0) {
-            delay(1000L)
-            remainingSeconds--
-        } else if (isTimerRunning && remainingSeconds == 0) {
+    // Auto-advance step when background timer finishes
+    LaunchedEffect(timerState.remainingSeconds, timerState.isRunning, isSessionActive) {
+        if (isSessionActive && timerState.remainingSeconds == 0 && !timerState.isRunning) {
             val nextStep = (currentStepIndex + 1) % TOTAL_CYCLE_STEPS
-            currentStepIndex = nextStep
-            remainingSeconds = getDurationForStep(nextStep)
+            val nextDuration = getDurationForStep(nextStep)
+            val nextPhase = when {
+                nextStep % 2 == 0 -> PomodoroPhase.FOCUS
+                nextStep == 7 -> PomodoroPhase.LONG_BREAK
+                else -> PomodoroPhase.SHORT_BREAK
+            }
+            pomodoroViewModel.startTimer(
+                context = context,
+                totalSeconds = nextDuration,
+                phase = nextPhase,
+                title = sessionTitle,
+                stepIndex = nextStep
+            )
         }
     }
 
-    // Duration Picker Dialog
     phaseToEdit?.let { phase ->
         val initialDuration = when (phase) {
             PomodoroPhase.FOCUS -> focusDurationSec
@@ -138,9 +151,6 @@ fun PomodoroScreen(
                     PomodoroPhase.FOCUS -> focusDurationSec = newDuration
                     PomodoroPhase.SHORT_BREAK -> shortBreakDurationSec = newDuration
                     PomodoroPhase.LONG_BREAK -> longBreakDurationSec = newDuration
-                }
-                if (!isSessionActive && currentPhase == phase) {
-                    remainingSeconds = newDuration
                 }
                 phaseToEdit = null
             }
@@ -169,26 +179,25 @@ fun PomodoroScreen(
         ) {
             // 1. Timer Display Card
             PomodoroTimerCard(
-                currentPhase = currentPhase,
+                currentPhase = if (isSessionActive) timerState.phase else currentPhase,
                 remainingSeconds = remainingSeconds,
                 progress = progress,
                 sessionTitle = sessionTitle,
                 isEditingTitle = isEditingTitle,
-                isSessionActive = isSessionActive, // <-- Passed here
+                isSessionActive = isSessionActive,
                 onTitleChange = { sessionTitle = it },
                 onToggleEditTitle = { isEditingTitle = !isEditingTitle },
                 modifier = Modifier
-                    .fillMaxWidth()
                     .padding(horizontal = 20.dp)
+                    .fillMaxWidth()
             )
 
-            // Fixed gap below the timer card regardless of middle container content height
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 2. Middle Container: Setup Selector <-> Active Session Timeline
+            // 2. Middle Container
             AnimatedContent(
                 targetState = isSessionActive,
-                contentAlignment = Alignment.TopCenter, // Keeps top edge anchored
+                contentAlignment = Alignment.TopCenter,
                 transitionSpec = {
                     if (targetState) {
                         (fadeIn(animationSpec = tween(durationMillis = 300, delayMillis = 180)) +
@@ -243,7 +252,7 @@ fun PomodoroScreen(
                         focusDurationSec = focusDurationSec,
                         shortBreakDurationSec = shortBreakDurationSec,
                         longBreakDurationSec = longBreakDurationSec,
-                        onPhaseSelected = { /* Selection disabled in setup per design */ },
+                        onPhaseSelected = { },
                         onOpenTimePicker = { phase -> phaseToEdit = phase },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -266,34 +275,56 @@ fun PomodoroScreen(
                 }
             }
 
-            // Absorbs all remaining vertical space above bottom action buttons
             Spacer(modifier = Modifier.weight(1f))
 
             // 3. Bottom Action Bar
             PomodoroActionButtons(
                 isSessionActive = isSessionActive,
-                isPlaying = isTimerRunning,
+                isPlaying = isPlaying,
                 isBreakMode = isBreakMode,
                 onStartSession = {
-                    isSessionActive = true
-                    isTimerRunning = true
+                    pomodoroViewModel.startTimer(
+                        context = context,
+                        totalSeconds = totalDurationForCurrentStep,
+                        phase = currentPhase,
+                        title = sessionTitle,
+                        stepIndex = currentStepIndex
+                    )
                 },
                 onPlayPauseClick = {
-                    isTimerRunning = !isTimerRunning
+                    if (isPlaying) {
+                        pomodoroViewModel.pauseTimer(context)
+                    } else {
+                        pomodoroViewModel.resumeTimer(context)
+                    }
                 },
                 onResetClick = {
-                    remainingSeconds = totalDurationForCurrentStep
+                    pomodoroViewModel.startTimer(
+                        context = context,
+                        totalSeconds = totalDurationForCurrentStep,
+                        phase = currentPhase,
+                        title = sessionTitle,
+                        stepIndex = currentStepIndex
+                    )
                 },
                 onSkipClick = {
                     val nextStep = (currentStepIndex + 1) % TOTAL_CYCLE_STEPS
-                    currentStepIndex = nextStep
-                    remainingSeconds = getDurationForStep(nextStep)
+                    val nextDuration = getDurationForStep(nextStep)
+                    val nextPhase = when {
+                        nextStep % 2 == 0 -> PomodoroPhase.FOCUS
+                        nextStep == 7 -> PomodoroPhase.LONG_BREAK
+                        else -> PomodoroPhase.SHORT_BREAK
+                    }
+                    pomodoroViewModel.startTimer(
+                        context = context,
+                        totalSeconds = nextDuration,
+                        phase = nextPhase,
+                        title = sessionTitle,
+                        stepIndex = nextStep
+                    )
                 },
                 onStopClick = {
-                    isSessionActive = false
-                    isTimerRunning = false
-                    currentStepIndex = 0
-                    remainingSeconds = focusDurationSec
+                    pomodoroViewModel.stopTimer(context)
                 },
                 modifier = Modifier.fillMaxWidth()
             )

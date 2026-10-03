@@ -13,18 +13,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class SettingsViewModel(application: Application) : AndroidViewModel(application) {
+class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsRepository = SettingsRepository(application)
 
-    val uiState: StateFlow<SettingsUiState> = settingsRepository.userSettings
-        .map<UserSettings, SettingsUiState> { userSettings ->
-            SettingsUiState.Success(userSettings)
+    val uiState: StateFlow<MainActivityUiState> = settingsRepository.userSettings
+        .map<UserSettings, MainActivityUiState> { userSettings ->
+            MainActivityUiState.Success(userSettings)
         }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = SettingsUiState.Loading
+            initialValue = MainActivityUiState.Loading
         )
 
     fun setDarkThemeConfig(darkThemeConfig: DarkThemeConfig) {
@@ -44,9 +44,4 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             settingsRepository.setPaletteStyle(paletteStyle)
         }
     }
-}
-
-sealed interface SettingsUiState {
-    data object Loading : SettingsUiState
-    data class Success(val userSettings: UserSettings) : SettingsUiState
 }

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.spaced.data.model.UserSettings
 import com.example.spaced.ui.theme.DarkThemeConfig
 import com.materialkolor.PaletteStyle
 import kotlinx.coroutines.flow.Flow
@@ -22,18 +23,20 @@ class SettingsRepository(private val context: Context) {
         val PALETTE_STYLE = stringPreferencesKey("palette_style")
     }
 
-    val darkThemeConfig: Flow<DarkThemeConfig> = context.dataStore.data.map { preferences ->
-        val name = preferences[PreferencesKeys.DARK_THEME_CONFIG] ?: DarkThemeConfig.SYSTEM.name
-        runCatching { DarkThemeConfig.valueOf(name) }.getOrDefault(DarkThemeConfig.SYSTEM)
-    }
+    val userSettings: Flow<UserSettings> = context.dataStore.data.map { preferences ->
+        val darkThemeName = preferences[PreferencesKeys.DARK_THEME_CONFIG] ?: DarkThemeConfig.SYSTEM.name
+        val darkThemeConfig = runCatching { DarkThemeConfig.valueOf(darkThemeName) }.getOrDefault(DarkThemeConfig.SYSTEM)
 
-    val useDynamicColor: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[PreferencesKeys.USE_DYNAMIC_COLOR] ?: true
-    }
+        val useDynamicColor = preferences[PreferencesKeys.USE_DYNAMIC_COLOR] ?: true
 
-    val paletteStyle: Flow<PaletteStyle> = context.dataStore.data.map { preferences ->
-        val name = preferences[PreferencesKeys.PALETTE_STYLE] ?: PaletteStyle.TonalSpot.name
-        runCatching { PaletteStyle.valueOf(name) }.getOrDefault(PaletteStyle.TonalSpot)
+        val paletteName = preferences[PreferencesKeys.PALETTE_STYLE] ?: PaletteStyle.TonalSpot.name
+        val paletteStyle = runCatching { PaletteStyle.valueOf(paletteName) }.getOrDefault(PaletteStyle.TonalSpot)
+
+        UserSettings(
+            darkThemeConfig = darkThemeConfig,
+            useDynamicColor = useDynamicColor,
+            paletteStyle = paletteStyle
+        )
     }
 
     suspend fun setDarkThemeConfig(darkThemeConfig: DarkThemeConfig) {
